@@ -1,5 +1,5 @@
 # Upload and Graph View
-This service is used to let user upload JSON file of temperature on batteries and view a graph representation.
+This service is used to let user upload JSON file of temperature and view a graph representation.
 
 File is uploaded in chunks and then the data is upserted in MongoDb which is then used to create and view graphs.
 
