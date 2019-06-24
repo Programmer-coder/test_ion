@@ -1,0 +1,154 @@
+<html>
+
+<head>
+  <title>Upload</title>
+</head>
+
+
+
+<body>
+  <input type="file" name="fileupload" id="inputfile" />
+
+  <script>
+
+    const uploadFileInChunks = (function () {
+      const CHUNK_SIZE = 1 * 1024 * 1024;
+
+      /**
+       * @param {Object} args
+       * @prop  {String} args.fileName
+       */
+      function finalizeFileUpload(args, done) {
+        const fileName = args.fileName;
+
+        let xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload/complete', true);
+
+        xhr.onload = () => {
+          if (xhr.status !== 200) {
+            return done(xhr.responseText);
+          }
+
+          let responseText = xhr.responseText;
+
+          return done(null, xhr.responseText);
+        }
+
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify({ fileName }));
+      }
+
+      /**
+       * @param {Object}   args
+       * @prop  {Object}   args.chunk
+       * @prop  {String}   args.fileName
+       * @prop  {String}   args.fileSize
+       * @prop  {Number}   args.chunkCount
+       * @param {Function} done
+       */
+      function uploadChunk(args, done) {
+        const chunk = args.chunk;
+        const fileName = args.fileName;
+        const fileSize = args.fileSize;
+        const chunkCount = args.chunkCount;
+
+        let xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload/chunk', true);
+
+        xhr.setRequestHeader('x-filename', fileName);
+        xhr.setRequestHeader('x-filesize', fileSize);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('x-chunkcount', chunkCount);
+
+        xhr.onload = function () {
+          const respText = xhr.responseText;
+
+          if (xhr.status !== 200) {
+            // error
+            return done(xhr.responseText);
+          }
+
+          return done(null, xhr.responseText);
+        }
+
+        return xhr.send(chunk);
+      }
+
+      /**
+       * @param {Object}   args
+       * @prop  {Object}   args.file
+       * @prop  {String}   args.offset
+       * @prop  {Function} done
+       */
+      return function (args, done) {
+        const file = args.file;
+        let offset = args.offset || 0;
+        const chunkCount = args.chunkCount || 0;
+
+        args.chunkCount = chunkCount;
+
+        if (!file) {
+          return alert('Please select a file.');
+        }
+
+        let fileSize = file.size;
+
+        offset = offset || 0;
+
+        // create chunk and upload
+        args.chunkCount++;
+
+        return uploadChunk({
+          chunk: file.slice(offset, offset + CHUNK_SIZE),
+          fileName: file.name,
+          fileSize: fileSize,
+          chunkCount: chunkCount
+        }, (err, data) => {
+          if (err) {
+            return done(err);
+          }
+
+          offset += CHUNK_SIZE;
+          args.offset = offset;
+
+          if (offset > fileSize) {
+            // finalize
+            return finalizeFileUpload({ fileName: file.name }, done);
+            // return done(undefined, data);
+          }
+
+          return uploadFileInChunks(args, done);
+        });
+      }
+    })();
+
+    window.onload = function fileSelected() {
+      const reader = new FileReader();
+      let inputEle = document.getElementById('inputfile');
+
+      inputEle.addEventListener('change', (evt) => {
+        let selectedFiles = evt.target.files;
+
+        // if (selectedFiles.length > 1) {
+        //   return alert('Multiple files upload is not yet supported.');
+        // }
+        // debugger;
+
+        uploadFileInChunks({ file: selectedFiles[0] }, (err, data) => {
+          if (err) {
+            return alert('Error Occurred while File Upload: ', err);
+          }
+
+          return alert('File Uploaded Successfully.')
+        });
+
+        console.log('File selected');
+        console.log(evt.target.files);
+      });
+
+      console.log('attached');
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,141 @@
+<html>
+
+<head>
+  <title>Graph</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
+</head>
+
+<body>
+  <div><select id="thermometer_select"><option></option></select></div>
+  <div>
+    <canvas id="mycanvas"></canvas>
+  </div>
+
+  <script>
+
+    // create initial empty chart
+    var ctx_live = document.getElementById("mycanvas");
+    var myChart = new Chart(ctx_live, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          borderWidth: 1,
+          borderColor: '#00c0ef',
+          label: 'liveCount',
+        }]
+      },
+      options: {
+        responsive: true,
+        title: {
+          display: true,
+          text: "Temperature History",
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            ticks: {
+              beginAtZero: true,
+            }
+          }]
+        }
+      }
+    });
+
+    var lastRequestTs;
+    let currentThermometer;
+    let previousThermometer;
+    let thermometerChanged = false;
+
+    // logic to get new data
+    var getData = function (reqThermometer) {
+      const xhr = new XMLHttpRequest();
+
+      xhr.open('POST', '/graph/temperature/' + reqThermometer, true);
+
+      xhr.onload = () => {
+        if (xhr.status !== 200) {
+          return console.log('error occurred');
+        }
+
+        let responseText = xhr.responseText;
+
+        responseText = JSON.parse(responseText);
+
+        if (responseText.data.length === 0 || currentThermometer != responseText.thermometer) {
+          return;
+        }
+
+        // update label -> x-axis -> TIME-STAMP
+        myChart.data.labels.push(...(responseText.data.map(temperatureObj => temperatureObj.ts)));
+
+        // update datasets-> y-axis -> Temperature
+        myChart.data.datasets[0].data.push(...(responseText.data.map(temperatureObj => temperatureObj.val)));
+
+        // re-render the chart
+        myChart.update();
+
+        lastRequestTs = responseText.data[responseText.data.length - 1].ts;
+
+        return getData(reqThermometer);
+      }
+
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      xhr.send(JSON.stringify({ collection: reqThermometer, ts: lastRequestTs }));
+    };
+
+    (() => {
+      const thermometerSelect = document.getElementById('thermometer_select');
+
+      const xhr = new XMLHttpRequest();
+
+      xhr.open('GET', '/temperature/list', true);
+
+      xhr.onload = () => {
+        let responseText = xhr.responseText;
+
+        if (xhr.status !== 200) {
+          return console.log('error fetching list: ', responseText);
+        }
+
+        responseText = JSON.parse(responseText);
+
+        if (responseText.collections.length === 0) {
+          return alert('Please upload at least one thermometer temperature file to fetch data.');
+        }
+
+        responseText.collections.forEach(thermometer => {
+          let option = document.createElement('option');
+          option.text = thermometer;
+          // option.value = thermometer;
+
+          thermometerSelect.add(option);
+        })
+      }
+
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      xhr.send();
+
+      thermometerSelect.onchange = (evt) => {
+        let selectedIndex = evt.target.selectedIndex;
+
+        thermometerChanged = true;
+        if (selectedIndex === 0) {
+          return;
+        }
+
+        const selectOptions = evt.target.options;
+
+        getData(evt.target.options[selectedIndex].innerText);
+      }
+    })();
+
+  </script>
+</body>
+
+</html>
