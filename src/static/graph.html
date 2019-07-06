@@ -65,7 +65,7 @@
 
         responseText = JSON.parse(responseText);
 
-        if (responseText.data.length === 0 || currentThermometer != responseText.thermometer) {
+        if (responseText.data.length === 0 || reqThermometer != responseText.thermometer) {
           return;
         }
 
