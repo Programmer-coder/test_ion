@@ -5,18 +5,18 @@ File is uploaded in chunks and then the data is upserted in MongoDb which is the
 
 
 ## Getting Started
-  Clone this repo into your local system and install the dependencies and thats it!
+  Clone this repo into your local system, install the dependencies and thats it!
 
 ## Prerequisites
   1. You need to download and install [NodeJs](https://nodejs.org/en/download/) depending on your Operating System.
-  2. Install MongoDB on your local system which could be downloaded from [here](https://www.mongodb.com/download-center/community). Make sure your mondo server is running on port# *27017*. Or you can explicitly specify port# using CLI as
-
-          mongod --port 27017
-  3. Install node dependencies using
-
+  2. You need to provide MongoDB Url and Port#. To Download MongoDb [here](https://www.mongodb.com/download-center/community) and start mongo daemon process using below command
+          mongod
+  3. You can either provide your config criteria in *.env* file(check .env_description).
+  4. Install node dependencies using
           npm i
+
 ## Running the Server
-  1. To spin node server(Node server is running on port# *3000*)
+  1. To spin node server(default server port#3000, you can change it using your environment file as mentioned above)
 
           npm run
   2. Navigate to [index](localhost:3000/) page in browser and you are good to go.
