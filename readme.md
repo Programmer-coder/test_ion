@@ -13,6 +13,7 @@ File is uploaded in chunks and then the data is upserted in MongoDb which is the
           mongod
   3. You can either provide your config criteria in *.env* file(check .env_description).
   4. Install node dependencies using
+  
           npm i
 
 ## Running the Server
